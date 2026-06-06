@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, MapPin, Phone, User, CheckCircle, Banknote } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, User, CheckCircle, Banknote, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useOrders } from '../context/OrderContext';
@@ -7,12 +7,12 @@ import { useAuth } from '../context/AuthContext';
 
 const CheckoutPage = () => {
   const { cartItems, getCartTotal, getDeliveryFee, getGrandTotal, clearCart } = useCart();
-  const { placeOrder } = useOrders();
+  const { addOrder } = useOrders();
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    name: user?.name || '',
+    name: user?.name || user?.user_metadata?.full_name || '',
     phone: user?.phone || '',
     address: user?.address || '',
     landmark: ''
@@ -20,6 +20,7 @@ const CheckoutPage = () => {
 
   const [isSuccess, setIsSuccess] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // If cart is empty and not on success screen, go back
   if (cartItems.length === 0 && !isSuccess) {
@@ -32,44 +33,56 @@ const CheckoutPage = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handlePlaceOrder = () => {
-    // Basic validation
+  const handlePlaceOrder = async () => {
     if (!formData.name || !formData.phone || !formData.address) {
       alert("Please fill in all mandatory fields.");
       return;
     }
 
-    // Since we support multiple shops, we might want to place one combined order 
-    // or take the shopName from the first item. For simplicity, taking the first item's shopName
-    // or a generic "Multiple Shops" if items are from different shops.
-    const shopNames = [...new Set(cartItems.map(item => item.shopName))];
-    const combinedShopName = shopNames.length > 1 ? "Multiple Shops" : shopNames[0] || "JandahaHub Store";
+    setSubmitting(true);
 
-    const orderData = {
-      items: [...cartItems],
-      address: `${formData.address}${formData.landmark ? `, Near ${formData.landmark}` : ''}`,
-      phone: formData.phone,
-      name: formData.name,
-      shopName: combinedShopName
-    };
+    try {
+      const shopNames = [...new Set(cartItems.map(item => item.shop_name || item.shopName))];
+      const combinedShopName = shopNames.length > 1 ? "Multiple Shops" : shopNames[0] || "JandahaHub Store";
 
-    const newOrder = placeOrder(orderData);
-    setPlacedOrderId(newOrder.id);
-    clearCart();
-    setIsSuccess(true);
+      const orderData = {
+        items: cartItems.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        address: `${formData.address}${formData.landmark ? `, Near ${formData.landmark}` : ''}`,
+        phone: formData.phone,
+        name: formData.name,
+        shopName: combinedShopName,
+        subtotal: getCartTotal(),
+        deliveryFee: getDeliveryFee(),
+        total: getGrandTotal()
+      };
+
+      const newOrder = await addOrder(orderData);
+      setPlacedOrderId(newOrder?.id?.substring(0, 8) || 'NEW');
+      clearCart();
+      setIsSuccess(true);
+    } catch (err) {
+      console.error('Error placing order:', err);
+      alert('Failed to place order. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (isSuccess) {
     return (
-      <div className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
-        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 animate-scale-in">
+      <div className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6">
           <CheckCircle className="w-12 h-12 text-green-500" />
         </div>
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Order Placed!</h1>
         <p className="text-gray-600 mb-2">Your order <span className="font-bold text-gray-800">#{placedOrderId}</span> has been confirmed.</p>
         <div className="bg-orange-50 border border-orange-200 text-orange-800 px-4 py-3 rounded-xl mb-8 flex items-center mt-4">
           <Banknote className="w-5 h-5 mr-2 shrink-0" />
-          <p className="text-sm font-medium">Please pay <span className="font-bold text-lg">₹{getGrandTotal()}</span> cash on delivery.</p>
+          <p className="text-sm font-medium">Pay cash on delivery.</p>
         </div>
         
         <button 
@@ -84,23 +97,6 @@ const CheckoutPage = () => {
         >
           Back to Home
         </button>
-        
-        {/* Simple CSS Confetti */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {[...Array(20)].map((_, i) => (
-            <div 
-              key={i}
-              className="absolute w-2 h-2 rounded-full animate-confetti"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `-10px`,
-                backgroundColor: ['#0D9488', '#F97316', '#FACC15', '#3B82F6', '#EF4444'][Math.floor(Math.random() * 5)],
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${2 + Math.random() * 3}s`
-              }}
-            />
-          ))}
-        </div>
       </div>
     );
   }
@@ -184,10 +180,24 @@ const CheckoutPage = () => {
           <div className="space-y-2 mb-3">
             {cartItems.map(item => (
               <div key={item.id} className="flex justify-between text-sm">
-                <span className="text-gray-600 truncate mr-2">{item.qty} × {item.name}</span>
-                <span className="font-medium text-gray-800">₹{item.price * item.qty}</span>
+                <span className="text-gray-600 truncate mr-2">{item.quantity} × {item.name}</span>
+                <span className="font-medium text-gray-800">₹{item.price * item.quantity}</span>
               </div>
             ))}
+          </div>
+          <div className="border-t border-gray-100 pt-3 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Subtotal</span>
+              <span className="font-medium">₹{getCartTotal()}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Delivery Fee</span>
+              <span className="font-medium">{getDeliveryFee() === 0 ? '✅ FREE' : `₹${getDeliveryFee()}`}</span>
+            </div>
+            <div className="flex justify-between text-base font-bold text-teal-600 pt-2 border-t border-gray-100">
+              <span>Total</span>
+              <span>₹{getGrandTotal()}</span>
+            </div>
           </div>
         </div>
 
@@ -205,9 +215,14 @@ const CheckoutPage = () => {
 
         <button 
           onClick={handlePlaceOrder}
-          className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 text-white font-bold text-lg py-4 rounded-2xl shadow-lg hover:from-teal-600 hover:to-emerald-700 transition-all active:scale-[0.98] flex items-center justify-center"
+          disabled={submitting}
+          className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 text-white font-bold text-lg py-4 rounded-2xl shadow-lg hover:from-teal-600 hover:to-emerald-700 transition-all active:scale-[0.98] flex items-center justify-center disabled:opacity-50"
         >
-          Place Order — ₹{getGrandTotal()}
+          {submitting ? (
+            <Loader2 className="w-6 h-6 animate-spin" />
+          ) : (
+            `Place Order — ₹${getGrandTotal()}`
+          )}
         </button>
       </div>
     </div>

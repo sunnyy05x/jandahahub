@@ -27,7 +27,7 @@ export default function ProductCard({ product }) {
   return (
     <div
       className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-3 flex items-center gap-4 transition-all duration-200 hover:shadow-md ${
-        !product.inStock ? 'opacity-60' : ''
+        !(product.in_stock ?? product.inStock ?? true) ? 'opacity-60' : ''
       }`}
     >
       {/* Left: Emoji on circle */}
@@ -42,9 +42,9 @@ export default function ProductCard({ product }) {
             <h3 className="font-semibold text-gray-800 text-sm leading-tight truncate">
               {product.name}
             </h3>
-            {product.shopName && (
+            {(product.shop_name || product.shopName) && (
               <p className="text-xs text-gray-500 mt-0.5 truncate">
-                {product.shopName}
+                {product.shop_name || product.shopName}
               </p>
             )}
           </div>
@@ -69,15 +69,15 @@ export default function ProductCard({ product }) {
             <span className="text-base font-bold text-teal-600">
               ₹{product.price}
             </span>
-            {(product.prepTime || product.unit) && (
+            {(product.prep_time || product.prepTime || product.unit) && (
               <span className="text-[10px] text-gray-400">
-                {product.prepTime || product.unit}
+                {product.prep_time || product.prepTime || product.unit}
               </span>
             )}
           </div>
 
           {/* Add to Cart / Quantity Stepper */}
-          {!product.inStock ? (
+          {!(product.in_stock ?? product.inStock ?? true) ? (
             <span className="text-xs text-gray-400 font-medium">
               Out of stock
             </span>

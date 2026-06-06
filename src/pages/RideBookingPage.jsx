@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, MapPin, Clock, Users, Calendar, Navigation, Bike, Car, Phone, CheckCircle, IndianRupee, Loader2 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { bikeRentals } from '../data/travelData'; // Still use local for bikes since we didn't add a table for it yet
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../config/supabase';
+
+// Bike rentals — will be moved to Supabase in a future update
+const bikeRentals = [
+  { id: 'bike-1', name: 'Hero Splendor', type: 'Bike', pricePerDay: 300, image: '🏍️', available: true, fuelType: 'Petrol', deposit: 500 },
+  { id: 'bike-2', name: 'Honda Activa', type: 'Scooter', pricePerDay: 400, image: '🛵', available: true, fuelType: 'Petrol', deposit: 700 },
+  { id: 'bike-3', name: 'Hero HF Deluxe', type: 'Bike', pricePerDay: 250, image: '🏍️', available: true, fuelType: 'Petrol', deposit: 400 },
+  { id: 'bike-4', name: 'TVS Jupiter', type: 'Scooter', pricePerDay: 350, image: '🛵', available: true, fuelType: 'Petrol', deposit: 600 },
+  { id: 'bike-5', name: 'Royal Enfield Classic', type: 'Bike', pricePerDay: 800, image: '🏍️', available: true, fuelType: 'Petrol', deposit: 2000 },
+];
 
 const RideBookingPage = () => {
   const navigate = useNavigate();
@@ -73,13 +81,36 @@ const RideBookingPage = () => {
     setSelectedItem(bike);
   };
 
-  const submitShuttleBooking = () => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const submitShuttleBooking = async () => {
     if (!shuttleForm.name || !shuttleForm.phone || !shuttleForm.time) {
       alert("Please fill all fields.");
       return;
     }
-    // In a real app we'd push this to a 'bookings' table in Supabase
-    setIsSuccess(true);
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from('ride_bookings').insert([{
+        customer_id: user?.id || null,
+        customer_name: shuttleForm.name,
+        customer_phone: shuttleForm.phone,
+        from_location: selectedItem.from,
+        to_location: selectedItem.to,
+        vehicle_type: selectedItem.vehicleType,
+        price: selectedItem.price * shuttleForm.seats,
+        seats: shuttleForm.seats,
+        booking_date: shuttleForm.date,
+        departure_time: shuttleForm.time,
+        status: 'requested'
+      }]);
+      if (error) throw error;
+      setIsSuccess(true);
+    } catch (err) {
+      console.error('Error booking shuttle:', err);
+      alert('Failed to book. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const submitBikeRental = () => {

@@ -1,9 +1,17 @@
 import React from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Header() {
   const { isAuthenticated, user, currentRole, logout } = useAuth();
+
+  const roleLabels = {
+    customer: 'Customer',
+    shopkeeper: 'Shopkeeper',
+    driver: 'Driver',
+    delivery: 'Delivery',
+    admin: 'Admin'
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-gradient-to-r from-teal-600 to-teal-500 text-white shadow-md">
@@ -21,19 +29,23 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Right: User Profile & Logout */}
+        {/* Right: User info + Logout */}
         {isAuthenticated && user ? (
           <div className="flex items-center gap-3">
-            <div className="flex flex-col items-end hidden sm:flex">
-              <span className="text-xs font-semibold">{user.name}</span>
-              <span className="text-[10px] opacity-80 uppercase tracking-wide">{currentRole}</span>
+            <div className="flex flex-col items-end">
+              <span className="text-xs font-semibold truncate max-w-[120px]">
+                {user.name || user?.user_metadata?.full_name || 'User'}
+              </span>
+              <span className="text-[10px] opacity-80 uppercase tracking-wide">
+                {roleLabels[currentRole] || currentRole}
+              </span>
             </div>
             <button
               onClick={logout}
-              className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full transition-colors"
+              className="bg-white/20 hover:bg-white/30 p-2 rounded-full transition-colors"
               title="Logout"
             >
-              <span className="text-sm">{user.avatar}</span>
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         ) : null}
