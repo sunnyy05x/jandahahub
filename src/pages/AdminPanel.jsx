@@ -1,200 +1,147 @@
 import React, { useState } from 'react';
-import { Package, Phone, MapPin, CheckCircle, Truck, Clock, User, ChevronDown, ChevronUp } from 'lucide-react';
-import { useOrders } from '../context/OrderContext';
+import { Users, ShoppingBag, Bike, Settings, Shield, Activity, Package } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useOrders } from '../context/OrderContext';
 
-const AdminPanel = () => {
-  const { orders, updateOrderStatus } = useOrders();
-  const { switchRole } = useAuth();
-  
-  const [showDelivered, setShowDelivered] = useState(false);
+export default function AdminPanel() {
+  const { user } = useAuth();
+  const { orders } = useOrders();
+  const [activeTab, setActiveTab] = useState('overview');
 
-  // Group orders
   const pendingOrders = orders.filter(o => o.status === 'pending');
-  const confirmedOrders = orders.filter(o => o.status === 'confirmed');
-  const transitOrders = orders.filter(o => o.status === 'out_for_delivery');
   const deliveredOrders = orders.filter(o => o.status === 'delivered');
 
-  const activeOrders = [...pendingOrders, ...confirmedOrders, ...transitOrders].sort((a, b) => new Date(b.placedAt) - new Date(a.placedAt));
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'pending': return <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold">New Order</span>;
-      case 'confirmed': return <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-bold">Preparing</span>;
-      case 'out_for_delivery': return <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-bold flex items-center"><Truck className="w-3 h-3 mr-1" /> On The Way</span>;
-      case 'delivered': return <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">Delivered</span>;
-      default: return null;
-    }
-  };
-
-  const getNextAction = (status, id) => {
-    switch (status) {
-      case 'pending':
-        return (
-          <button 
-            onClick={() => updateOrderStatus(id, 'confirmed')}
-            className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-sm hover:bg-blue-700 transition-colors"
-          >
-            Confirm Order
-          </button>
-        );
-      case 'confirmed':
-        return (
-          <button 
-            onClick={() => updateOrderStatus(id, 'out_for_delivery')}
-            className="w-full bg-orange-500 text-white font-bold py-3 rounded-xl shadow-sm hover:bg-orange-600 transition-colors"
-          >
-            Mark Out for Delivery
-          </button>
-        );
-      case 'out_for_delivery':
-        return (
-          <button 
-            onClick={() => updateOrderStatus(id, 'delivered')}
-            className="w-full bg-green-600 text-white font-bold py-3 rounded-xl shadow-sm hover:bg-green-700 transition-colors flex justify-center items-center"
-          >
-            <CheckCircle className="w-5 h-5 mr-2" /> Mark Delivered
-          </button>
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-100 pb-24">
-      {/* Admin Header */}
-      <div className="bg-gray-900 text-white px-4 pt-10 pb-6 sticky top-0 z-20 shadow-md">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-xl font-bold flex items-center">
-            <Package className="w-6 h-6 mr-2 text-teal-400" />
-            Rider Panel
-          </h1>
-          <button 
-            onClick={() => switchRole('customer')}
-            className="bg-gray-800 border border-gray-700 px-3 py-1.5 rounded-lg text-sm hover:bg-gray-700 transition-colors"
-          >
-            Exit Admin
-          </button>
+    <div className="min-h-screen bg-slate-50 pb-20">
+      <div className="bg-gradient-to-r from-red-600 to-rose-600 text-white p-5 pb-8 rounded-b-3xl shadow-md">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Shield className="w-6 h-6" />
+            <h1 className="text-xl font-bold tracking-tight">Admin Console</h1>
+          </div>
+          <div className="text-sm font-medium bg-black/20 px-3 py-1 rounded-full">
+            {user?.name}
+          </div>
         </div>
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-yellow-500 text-yellow-950 rounded-xl p-3 shadow-inner">
-            <p className="text-xs font-bold opacity-80 mb-1">Pending</p>
-            <p className="text-2xl font-black">{pendingOrders.length}</p>
-          </div>
-          <div className="bg-blue-500 text-white rounded-xl p-3 shadow-inner">
-            <p className="text-xs font-bold opacity-80 mb-1">In Transit</p>
-            <p className="text-2xl font-black">{transitOrders.length}</p>
-          </div>
-          <div className="bg-green-500 text-white rounded-xl p-3 shadow-inner">
-            <p className="text-xs font-bold opacity-80 mb-1">Delivered</p>
-            <p className="text-2xl font-black">{deliveredOrders.length}</p>
-          </div>
+        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+          <button 
+            onClick={() => setActiveTab('overview')}
+            className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'overview' ? 'bg-white text-red-600' : 'bg-white/20 hover:bg-white/30'}`}
+          >
+            <Activity className="w-4 h-4 inline mr-2" /> Overview
+          </button>
+          <button 
+            onClick={() => setActiveTab('users')}
+            className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'users' ? 'bg-white text-red-600' : 'bg-white/20 hover:bg-white/30'}`}
+          >
+            <Users className="w-4 h-4 inline mr-2" /> Manage Users
+          </button>
+          <button 
+            onClick={() => setActiveTab('orders')}
+            className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'orders' ? 'bg-white text-red-600' : 'bg-white/20 hover:bg-white/30'}`}
+          >
+            <Package className="w-4 h-4 inline mr-2" /> All Orders
+          </button>
         </div>
       </div>
 
-      <div className="p-4">
-        <h2 className="font-bold text-gray-800 mb-4 flex items-center">
-          <Clock className="w-5 h-5 mr-2 text-gray-500" />
-          Active Deliveries ({activeOrders.length})
-        </h2>
-
-        {activeOrders.length === 0 ? (
-          <div className="bg-white rounded-2xl p-6 text-center border border-gray-200 border-dashed">
-            <p className="text-gray-500">No active deliveries right now. Take a break! ☕</p>
-          </div>
-        ) : (
+      <div className="p-4 -mt-4 relative z-10">
+        
+        {activeTab === 'overview' && (
           <div className="space-y-4">
-            {activeOrders.map(order => (
-              <div key={order.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                {/* Header */}
-                <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex justify-between items-center">
-                  {getStatusBadge(order.status)}
-                  <span className="text-xs font-mono text-gray-500">#{order.id}</span>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <ShoppingBag className="w-6 h-6 text-orange-500 mb-2" />
+                <p className="text-xs text-gray-500 font-bold uppercase">Total Orders</p>
+                <p className="text-2xl font-black text-gray-800">{orders.length}</p>
+              </div>
+              <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <Package className="w-6 h-6 text-yellow-500 mb-2" />
+                <p className="text-xs text-gray-500 font-bold uppercase">Pending</p>
+                <p className="text-2xl font-black text-gray-800">{pendingOrders.length}</p>
+              </div>
+              <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <Bike className="w-6 h-6 text-blue-500 mb-2" />
+                <p className="text-xs text-gray-500 font-bold uppercase">Active Rides</p>
+                <p className="text-2xl font-black text-gray-800">12</p>
+              </div>
+              <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <Users className="w-6 h-6 text-teal-500 mb-2" />
+                <p className="text-xs text-gray-500 font-bold uppercase">Total Users</p>
+                <p className="text-2xl font-black text-gray-800">145</p>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+              <h3 className="font-bold text-gray-800 mb-3">System Health</h3>
+              <div className="flex items-center justify-between py-2 border-b border-gray-50">
+                <span className="text-sm text-gray-600">Database Connection</span>
+                <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">Online</span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-gray-50">
+                <span className="text-sm text-gray-600">Payment Gateway</span>
+                <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">Online</span>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm text-gray-600">SMS OTP Service</span>
+                <span className="text-xs font-bold text-yellow-600 bg-yellow-50 px-2 py-1 rounded-lg">Degraded</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'users' && (
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+            <h3 className="font-bold text-gray-800 mb-4">User Roles Directory</h3>
+            <div className="space-y-3">
+              {[
+                { name: 'Amit Kumar', role: 'Customer', phone: '9876543210' },
+                { name: 'Sharma Ji', role: 'Shopkeeper', phone: '9876543211' },
+                { name: 'Raju Driver', role: 'Cab/Rapido', phone: '9876543212' },
+                { name: 'Vikas Delivery', role: 'Deliveryman', phone: '9876543213' },
+              ].map((u, i) => (
+                <div key={i} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                  <div>
+                    <p className="font-bold text-sm text-gray-800">{u.name}</p>
+                    <p className="text-xs text-gray-500">{u.phone}</p>
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-gray-200 text-gray-700 px-2 py-1 rounded">
+                    {u.role}
+                  </span>
                 </div>
+              ))}
+            </div>
+            <button className="w-full mt-4 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl text-sm">
+              + Add New User Manually
+            </button>
+          </div>
+        )}
 
-                {/* Details */}
-                <div className="p-4">
-                  <div className="flex items-start mb-3">
-                    <User className="w-5 h-5 text-gray-400 mr-3 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold text-gray-800">{order.customerName}</p>
-                      <p className="text-sm text-gray-600">{order.customerPhone}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start mb-4">
-                    <MapPin className="w-5 h-5 text-gray-400 mr-3 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">{order.customerAddress}</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 mb-4">
-                    <div className="flex items-center mb-2">
-                      <Package className="w-4 h-4 text-orange-500 mr-2" />
-                      <span className="text-sm font-bold text-orange-800">Pickup from: {order.shopName}</span>
-                    </div>
-                    <p className="text-xs text-orange-700">{order.items.length} items to collect</p>
-                  </div>
-
-                  {/* Financial Row */}
-                  <div className="flex justify-between items-end mb-4 p-3 bg-gray-50 rounded-xl">
-                    <div>
-                      <p className="text-xs text-gray-500 font-bold">Collect Cash</p>
-                      <p className="text-xl font-black text-gray-800">₹{order.total}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-gray-500 font-bold">Your Earnings</p>
-                      <p className="text-lg font-bold text-green-600">+₹{order.riderEarnings || 20}</p>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="space-y-3">
-                    <a 
-                      href={`tel:${order.customerPhone}`}
-                      className="flex items-center justify-center w-full bg-gray-100 text-gray-800 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors"
-                    >
-                      <Phone className="w-5 h-5 mr-2" /> Call Customer
-                    </a>
-                    {getNextAction(order.status, order.id)}
-                  </div>
+        {activeTab === 'orders' && (
+          <div className="space-y-3">
+            {orders.map(order => (
+              <div key={order.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-bold text-gray-800">{order.id}</span>
+                  <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${
+                    order.status === 'delivered' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {order.status}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 mb-1">Customer: <span className="font-semibold">{order.customerName}</span></p>
+                <p className="text-xs text-gray-600 mb-2">Shop: <span className="font-semibold">{order.shopName}</span></p>
+                <div className="flex justify-between items-center pt-2 border-t border-gray-50 mt-2">
+                  <span className="text-sm font-bold text-teal-600">₹{order.total}</span>
+                  <span className="text-xs text-gray-400">{new Date(order.placedAt).toLocaleTimeString()}</span>
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* Delivered Section Toggle */}
-        <div className="mt-8">
-          <button 
-            onClick={() => setShowDelivered(!showDelivered)}
-            className="flex items-center text-gray-600 font-medium mb-4 hover:text-gray-900"
-          >
-            {showDelivered ? <ChevronUp className="w-5 h-5 mr-1" /> : <ChevronDown className="w-5 h-5 mr-1" />}
-            Past Deliveries ({deliveredOrders.length})
-          </button>
-
-          {showDelivered && (
-            <div className="space-y-3 opacity-70">
-              {deliveredOrders.map(order => (
-                <div key={order.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 flex justify-between items-center">
-                  <div>
-                    <p className="font-bold text-sm">#{order.id} • {order.customerName}</p>
-                    <p className="text-xs text-gray-500">Collected ₹{order.total}</p>
-                  </div>
-                  <span className="text-green-600 text-xs font-bold bg-green-50 px-2 py-1 rounded">Done</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
-};
-
-export default AdminPanel;
+}

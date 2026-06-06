@@ -3,7 +3,7 @@ import { MapPin } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Header() {
-  const { currentRole: role, switchRole: setRole } = useAuth();
+  const { isAuthenticated, user, currentRole, logout } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 bg-gradient-to-r from-teal-600 to-teal-500 text-white shadow-md">
@@ -21,29 +21,22 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Right: Role switcher */}
-        <div className="flex items-center bg-white/20 rounded-full p-0.5 backdrop-blur-sm">
-          <button
-            onClick={() => setRole('customer')}
-            className={`px-3 py-1 text-xs font-semibold rounded-full transition-all duration-200 ${
-              role === 'customer'
-                ? 'bg-white text-teal-600 shadow-sm'
-                : 'text-white/90 hover:text-white'
-            }`}
-          >
-            Customer
-          </button>
-          <button
-            onClick={() => setRole('admin')}
-            className={`px-3 py-1 text-xs font-semibold rounded-full transition-all duration-200 ${
-              role === 'admin'
-                ? 'bg-white text-teal-600 shadow-sm'
-                : 'text-white/90 hover:text-white'
-            }`}
-          >
-            Admin
-          </button>
-        </div>
+        {/* Right: User Profile & Logout */}
+        {isAuthenticated && user ? (
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col items-end hidden sm:flex">
+              <span className="text-xs font-semibold">{user.name}</span>
+              <span className="text-[10px] opacity-80 uppercase tracking-wide">{currentRole}</span>
+            </div>
+            <button
+              onClick={logout}
+              className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full transition-colors"
+              title="Logout"
+            >
+              <span className="text-sm">{user.avatar}</span>
+            </button>
+          </div>
+        ) : null}
       </div>
     </header>
   );
