@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Car, CheckCircle, Loader2, IndianRupee, MapPin, User, XCircle } from 'lucide-react';
+import { ArrowLeft, Car, CheckCircle, Loader2, User, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../config/supabase';
-import MapPicker from '../components/MapPicker';
 
 export default function RideBookingPage() {
   const navigate = useNavigate();
@@ -12,37 +11,49 @@ export default function RideBookingPage() {
   // Phase: 'input' -> 'searching' -> 'accepted'
   const [phase, setPhase] = useState('input');
   
-  // Map Data
-  const [fromLoc, setFromLoc] = useState(null);
-  const [toLoc, setToLoc] = useState(null);
-  const [distance, setDistance] = useState(0);
+  // Form Data
+  const [fromLoc, setFromLoc] = useState('');
+  const [toLoc, setToLoc] = useState('');
+  const [proposedFare, setProposedFare] = useState('');
   
   const [bookingId, setBookingId] = useState(null);
   const [bids, setBids] = useState([]);
   const [acceptedDriver, setAcceptedDriver] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Suggested Price ~ ₹15 per km minimum ₹50
-  const suggestedPrice = Math.max(50, Math.round(distance * 15));
-
-  const handleRouteSelected = (from, to, dist) => {
-    setFromLoc(from);
-    setToLoc(to);
-    setDistance(dist);
+  // Free Translation API (English to Hindi)
+  const translateToHindi = async (text) => {
+    if (!text) return '';
+    try {
+      const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|hi`);
+      const data = await res.json();
+      return data.responseData?.translatedText || text;
+    } catch (e) {
+      console.error("Translation error", e);
+      return text;
+    }
   };
 
   const requestRide = async () => {
-    if (!fromLoc || !toLoc) return alert('Please select pickup and drop-off locations.');
+    if (!fromLoc || !toLoc || !proposedFare) return alert('Please fill in all fields.');
     setLoading(true);
+    
     try {
+      // Fetch Hindi translations for driver convenience
+      const fromHi = await translateToHindi(fromLoc);
+      const toHi = await translateToHindi(toLoc);
+
+      const formattedFrom = fromHi !== fromLoc ? `${fromLoc} (${fromHi})` : fromLoc;
+      const formattedTo = toHi !== toLoc ? `${toLoc} (${toHi})` : toLoc;
+
       const { data, error } = await supabase.from('ride_bookings').insert([{
         customer_id: user?.id,
         customer_name: user?.name || 'Customer',
         customer_phone: user?.phone || '9999999999',
-        from_location: fromLoc.name,
-        to_location: toLoc.name,
+        from_location: formattedFrom,
+        to_location: formattedTo,
         vehicle_type: 'Any',
-        price: suggestedPrice,
+        price: Number(proposedFare),
         status: 'searching'
       }]).select().single();
 
@@ -102,7 +113,7 @@ export default function RideBookingPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col pb-24">
       {/* Header */}
-      <div className="bg-white px-4 pt-4 pb-3 border-b border-gray-100 shadow-sm flex items-center">
+      <div className="bg-white px-4 pt-4 pb-3 border-b border-gray-100 shadow-sm flex items-center sticky top-0 z-10">
         <button onClick={() => navigate(-1)} className="mr-3 p-1 hover:bg-gray-100 rounded-full">
           <ArrowLeft className="w-6 h-6 text-gray-800" />
         </button>
@@ -110,26 +121,69 @@ export default function RideBookingPage() {
       </div>
 
       {phase === 'input' && (
-        <div className="flex-1 flex flex-col p-4">
-          <div className="h-72 w-full mb-4">
-            <MapPicker onRouteSelected={handleRouteSelected} />
+        <div className="p-4 space-y-4">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+            <h2 className="font-bold text-gray-800 mb-4 text-lg">Where are you going?</h2>
+            
+            <div className="space-y-4 relative">
+              <div className="absolute left-[21px] top-6 bottom-6 w-0.5 bg-gray-200 z-0"></div>
+              
+              <div className="relative z-10 flex items-center">
+                <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center flex-shrink-0 border-4 border-white mr-3">
+                  <div className="w-3 h-3 bg-teal-500 rounded-full"></div>
+                </div>
+                <div className="w-full">
+                  <label className="text-xs font-bold text-gray-500 uppercase ml-1">Pickup Location</label>
+                  <input 
+                    type="text" 
+                    value={fromLoc}
+                    onChange={(e) => setFromLoc(e.target.value)}
+                    placeholder="e.g. Jandaha Chowk" 
+                    className="w-full mt-1 p-3 bg-slate-50 border-transparent rounded-xl focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+              </div>
+
+              <div className="relative z-10 flex items-center">
+                <div className="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center flex-shrink-0 border-4 border-white mr-3">
+                  <MapPin className="w-5 h-5 text-orange-500" />
+                </div>
+                <div className="w-full">
+                  <label className="text-xs font-bold text-gray-500 uppercase ml-1">Drop-off Location</label>
+                  <input 
+                    type="text" 
+                    value={toLoc}
+                    onChange={(e) => setToLoc(e.target.value)}
+                    placeholder="e.g. Hajipur Station" 
+                    className="w-full mt-1 p-3 bg-slate-50 border-transparent rounded-xl focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+            <label className="text-xs font-bold text-gray-500 uppercase ml-1">Offer Your Fare (₹)</label>
+            <div className="relative mt-1">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-500 text-lg">₹</span>
+              <input 
+                type="number" 
+                value={proposedFare}
+                onChange={(e) => setProposedFare(e.target.value)}
+                placeholder="0" 
+                className="w-full p-4 pl-8 bg-slate-50 border-transparent rounded-xl focus:ring-2 focus:ring-teal-500 font-bold text-xl"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-2 ml-1">Drivers will see your offer and can accept or counter it.</p>
           </div>
           
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mt-auto">
-            <h3 className="font-bold text-gray-800 mb-2">Ride Details</h3>
-            <div className="flex justify-between text-sm text-gray-600 mb-4">
-              <span>Distance: <strong>{distance} km</strong></span>
-              <span>Suggested: <strong>₹{suggestedPrice}</strong></span>
-            </div>
-            
-            <button 
-              onClick={requestRide}
-              disabled={loading || !distance}
-              className="w-full bg-teal-600 text-white font-bold py-4 rounded-xl shadow-md disabled:bg-gray-300 flex items-center justify-center transition-colors"
-            >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Request Ride'}
-            </button>
-          </div>
+          <button 
+            onClick={requestRide}
+            disabled={loading || !fromLoc || !toLoc || !proposedFare}
+            className="w-full bg-teal-600 text-white font-bold py-4 rounded-xl shadow-md disabled:bg-gray-300 flex items-center justify-center transition-colors"
+          >
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Request Ride'}
+          </button>
         </div>
       )}
 
@@ -140,8 +194,8 @@ export default function RideBookingPage() {
               <div className="absolute inset-0 bg-teal-400 rounded-full animate-ping opacity-20"></div>
               <Car className="w-8 h-8 text-teal-600" />
             </div>
-            <h2 className="text-xl font-bold text-gray-800 mb-1">Searching for Drivers...</h2>
-            <p className="text-sm text-gray-500 mb-4">Finding the best prices for your route.</p>
+            <h2 className="text-xl font-bold text-gray-800 mb-1">Finding Drivers...</h2>
+            <p className="text-sm text-gray-500 mb-4">Drivers are reviewing your offer of ₹{proposedFare}</p>
             <button onClick={cancelRequest} className="text-red-500 text-sm font-bold bg-red-50 px-4 py-2 rounded-lg">Cancel Request</button>
           </div>
 
@@ -192,7 +246,7 @@ export default function RideBookingPage() {
               <div className="flex justify-between"><span className="text-gray-500">Driver</span><span className="font-bold">{acceptedDriver.driver_name}</span></div>
               <div className="flex justify-between"><span className="text-gray-500">Vehicle</span><span className="font-bold">{acceptedDriver.vehicle_name}</span></div>
               <div className="flex justify-between"><span className="text-gray-500">Number Plate</span><span className="font-bold bg-yellow-100 px-2 rounded border border-yellow-300">{acceptedDriver.vehicle_number}</span></div>
-              <div className="flex justify-between pt-3 border-t mt-3"><span className="text-gray-500">Total Fare (Cash)</span><span className="font-black text-teal-600 text-lg">₹{acceptedDriver.bid_price}</span></div>
+              <div className="flex justify-between pt-3 border-t mt-3"><span className="text-gray-500">Agreed Fare (Cash)</span><span className="font-black text-teal-600 text-lg">₹{acceptedDriver.bid_price}</span></div>
             </div>
           </div>
 
