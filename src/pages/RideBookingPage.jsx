@@ -19,6 +19,7 @@ export default function RideBookingPage() {
   const [bookingId, setBookingId] = useState(null);
   const [bids, setBids] = useState([]);
   const [acceptedDriver, setAcceptedDriver] = useState(null);
+  const [driverPhone, setDriverPhone] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // Free Google Translate API (English to Hindi)
@@ -90,6 +91,9 @@ export default function RideBookingPage() {
         price: bid.bid_price,
         vehicle_type: `${bid.vehicle_name} (${bid.vehicle_number})`
       }).eq('id', bookingId);
+      // 4. Fetch Driver Phone
+      const { data: driverProfile } = await supabase.from('profiles').select('phone').eq('id', bid.driver_id).single();
+      setDriverPhone(driverProfile?.phone || 'Not Provided');
       
       setAcceptedDriver(bid);
       setPhase('accepted');
@@ -245,6 +249,7 @@ export default function RideBookingPage() {
             <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">Ride Details</h3>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-gray-500">Driver</span><span className="font-bold">{acceptedDriver.driver_name}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Phone</span><span className="font-bold text-teal-600">{driverPhone}</span></div>
               <div className="flex justify-between"><span className="text-gray-500">Vehicle</span><span className="font-bold">{acceptedDriver.vehicle_name}</span></div>
               <div className="flex justify-between"><span className="text-gray-500">Number Plate</span><span className="font-bold bg-yellow-100 px-2 rounded border border-yellow-300">{acceptedDriver.vehicle_number}</span></div>
               <div className="flex justify-between pt-3 border-t mt-3"><span className="text-gray-500">Agreed Fare (Cash)</span><span className="font-black text-teal-600 text-lg">₹{acceptedDriver.bid_price}</span></div>
