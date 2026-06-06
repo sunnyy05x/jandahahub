@@ -81,24 +81,8 @@ export function AuthProvider({ children }) {
   };
 
   const loginWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-    });
-  };
-
-  const sendPhoneOtp = async (phone) => {
-    // Supabase requires E.164 format (e.g. +919876543210)
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: `+91${phone}`,
-    });
-    if (error) throw error;
-  };
-
-  const verifyPhoneOtp = async (phone, token) => {
-    const { error } = await supabase.auth.verifyOtp({
-      phone: `+91${phone}`,
-      token,
-      type: 'sms',
     });
     if (error) throw error;
   };
@@ -130,8 +114,6 @@ export function AuthProvider({ children }) {
       currentRole,
       loading,
       loginWithGoogle,
-      sendPhoneOtp,
-      verifyPhoneOtp,
       logout,
       switchRole,
       isCustomer,
