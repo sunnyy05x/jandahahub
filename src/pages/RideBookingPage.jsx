@@ -21,13 +21,14 @@ export default function RideBookingPage() {
   const [acceptedDriver, setAcceptedDriver] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Free Translation API (English to Hindi)
+  // Free Google Translate API (English to Hindi)
   const translateToHindi = async (text) => {
     if (!text) return '';
     try {
-      const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|hi`);
+      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=hi&dt=t&q=${encodeURIComponent(text)}`);
       const data = await res.json();
-      return data.responseData?.translatedText || text;
+      // Google API returns nested array: [[[ "हाजीपुर", "Hajipur", ... ]]]
+      return data[0][0][0] || text;
     } catch (e) {
       console.error("Translation error", e);
       return text;
@@ -43,8 +44,8 @@ export default function RideBookingPage() {
       const fromHi = await translateToHindi(fromLoc);
       const toHi = await translateToHindi(toLoc);
 
-      const formattedFrom = fromHi !== fromLoc ? `${fromLoc} (${fromHi})` : fromLoc;
-      const formattedTo = toHi !== toLoc ? `${toLoc} (${toHi})` : toLoc;
+      const formattedFrom = `${fromLoc} (${fromHi})`;
+      const formattedTo = `${toLoc} (${toHi})`;
 
       const { data, error } = await supabase.from('ride_bookings').insert([{
         customer_id: user?.id,
