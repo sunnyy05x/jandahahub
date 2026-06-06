@@ -3,7 +3,7 @@ import { MapPin } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Header() {
-  const { role, setRole } = useAuth();
+  const { currentRole: role, switchRole: setRole } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 bg-gradient-to-r from-teal-600 to-teal-500 text-white shadow-md">
