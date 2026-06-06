@@ -1,43 +1,59 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Smartphone, Mail, Store, Bike, Package, UserCircle, Shield } from 'lucide-react';
+import { Smartphone, Mail, Store, Bike, Package, UserCircle, Shield, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { loginWithGoogle, sendPhoneOtp, verifyPhoneOtp } = useAuth();
+  
   const [loginMethod, setLoginMethod] = useState(null); // 'google', 'phone'
   const [phone, setPhone] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
-  
-  // For simulation: allow user to select their role during sign in
-  const [selectedRole, setSelectedRole] = useState('customer');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const roles = [
-    { id: 'customer', name: 'Customer', icon: UserCircle, color: 'text-teal-600' },
-    { id: 'shopkeeper', name: 'Shopkeeper', icon: Store, color: 'text-orange-500' },
-    { id: 'driver', name: 'Cab/Rapido', icon: Bike, color: 'text-blue-500' },
-    { id: 'delivery', name: 'Deliveryman', icon: Package, color: 'text-green-600' },
-    { id: 'admin', name: 'Admin', icon: Shield, color: 'text-red-500' },
-  ];
-
-  const handleSimulatedLogin = (e) => {
+  const handleGoogleLogin = async (e) => {
     e.preventDefault();
-    
-    // Simulate user profile based on role
-    const mockUser = {
-      name: loginMethod === 'google' ? 'Google User' : 'Phone User',
-      phone: phone || '9876543210',
-      address: 'Ward 7, Jandaha, Vaishali',
-      avatar: selectedRole === 'admin' ? '🛡️' : '👤',
-      id: `user-${Date.now()}`
-    };
-
-    login(mockUser, selectedRole);
+    setLoading(true);
+    setError(null);
+    try {
+      await loginWithGoogle();
+      // Auth state will change automatically and redirect
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
   };
 
-  const handleSendOtp = (e) => {
+  const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (phone.length >= 10) setOtpSent(true);
+    if (phone.length < 10) return;
+    
+    setLoading(true);
+    setError(null);
+    try {
+      await sendPhoneOtp(phone);
+      setOtpSent(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    if (otp.length < 4) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      await verifyPhoneOtp(phone, otp);
+      // Auth state will change automatically and redirect
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
   };
 
   return (
@@ -54,68 +70,33 @@ export default function LoginPage() {
 
       <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl p-6 border border-slate-100">
         
-        <div className="mb-6">
-          <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">1. Select Your Role</h2>
-          <div className="grid grid-cols-2 gap-2">
-            {roles.map((role) => {
-              const Icon = role.icon;
-              const isActive = selectedRole === role.id;
-              return (
-                <button
-                  key={role.id}
-                  onClick={() => setSelectedRole(role.id)}
-                  className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all ${
-                    isActive 
-                      ? 'border-teal-500 bg-teal-50 shadow-sm' 
-                      : 'border-slate-100 hover:border-slate-200 bg-white'
-                  }`}
-                >
-                  <Icon className={`w-6 h-6 mb-1 ${isActive ? role.color : 'text-gray-400'}`} />
-                  <span className={`text-xs font-semibold ${isActive ? 'text-gray-900' : 'text-gray-500'}`}>
-                    {role.name}
-                  </span>
-                </button>
-              );
-            })}
+        {error && (
+          <div className="mb-4 bg-red-50 text-red-600 p-3 rounded-xl text-sm border border-red-100">
+            {error}
           </div>
-        </div>
+        )}
 
         <div className="mb-6">
-          <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">2. Login Method</h2>
+          <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Login / Signup</h2>
           
           {!loginMethod && (
             <div className="space-y-3">
               <button 
-                onClick={() => setLoginMethod('google')}
-                className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 py-3.5 rounded-2xl font-semibold shadow-sm hover:bg-gray-50 transition-colors"
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 py-3.5 rounded-2xl font-semibold shadow-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
-                <Mail className="w-5 h-5 text-red-500" />
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mail className="w-5 h-5 text-red-500" />}
                 Continue with Google
               </button>
               
               <button 
                 onClick={() => setLoginMethod('phone')}
-                className="w-full flex items-center justify-center gap-2 bg-teal-500 text-white py-3.5 rounded-2xl font-semibold shadow-md hover:bg-teal-600 transition-colors"
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 bg-teal-500 text-white py-3.5 rounded-2xl font-semibold shadow-md hover:bg-teal-600 transition-colors disabled:opacity-50"
               >
                 <Smartphone className="w-5 h-5" />
                 Continue with Phone
-              </button>
-            </div>
-          )}
-
-          {loginMethod === 'google' && (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <p className="text-sm text-gray-500 mb-4 text-center">
-                Simulating Google Authentication...
-              </p>
-              <button 
-                onClick={handleSimulatedLogin}
-                className="w-full bg-teal-500 text-white py-3.5 rounded-2xl font-bold shadow-md hover:bg-teal-600 transition-colors"
-              >
-                Authenticate Now
-              </button>
-              <button onClick={() => setLoginMethod(null)} className="w-full text-sm text-gray-500 mt-4 font-medium hover:text-gray-800">
-                Back to options
               </button>
             </div>
           )}
@@ -124,50 +105,55 @@ export default function LoginPage() {
             <form onSubmit={handleSendOtp} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="mb-4">
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Phone Number</label>
-                <input 
-                  type="tel" 
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Enter 10-digit number"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                  required
-                />
+                <div className="flex bg-white border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-teal-500">
+                  <span className="flex items-center justify-center px-3 bg-gray-50 text-gray-500 font-semibold border-r border-gray-200">
+                    +91
+                  </span>
+                  <input 
+                    type="tel" 
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    placeholder="Enter 10-digit number"
+                    className="w-full px-4 py-3 focus:outline-none"
+                    required
+                  />
+                </div>
               </div>
               <button 
                 type="submit"
-                className="w-full bg-teal-500 text-white py-3.5 rounded-2xl font-bold shadow-md hover:bg-teal-600 transition-colors disabled:opacity-50"
-                disabled={phone.length < 10}
+                className="w-full bg-teal-500 text-white py-3.5 rounded-2xl font-bold shadow-md hover:bg-teal-600 transition-colors disabled:opacity-50 flex justify-center items-center"
+                disabled={phone.length < 10 || loading}
               >
-                Send OTP
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Send OTP'}
               </button>
-              <button type="button" onClick={() => setLoginMethod(null)} className="w-full text-sm text-gray-500 mt-4 font-medium hover:text-gray-800">
+              <button type="button" onClick={() => setLoginMethod(null)} disabled={loading} className="w-full text-sm text-gray-500 mt-4 font-medium hover:text-gray-800 disabled:opacity-50">
                 Back to options
               </button>
             </form>
           )}
 
           {loginMethod === 'phone' && otpSent && (
-            <form onSubmit={handleSimulatedLogin} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <form onSubmit={handleVerifyOtp} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
               <p className="text-sm text-gray-500 mb-4 text-center">
                 OTP sent to +91 {phone}
               </p>
               <div className="mb-4">
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Enter OTP (Any 4 digits for demo)</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Enter OTP</label>
                 <input 
-                  type="number" 
+                  type="text" 
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="----"
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="------"
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-center text-xl tracking-widest focus:ring-2 focus:ring-teal-500 focus:outline-none"
                   required
                 />
               </div>
               <button 
                 type="submit"
-                className="w-full bg-teal-500 text-white py-3.5 rounded-2xl font-bold shadow-md hover:bg-teal-600 transition-colors disabled:opacity-50"
-                disabled={otp.length < 4}
+                className="w-full bg-teal-500 text-white py-3.5 rounded-2xl font-bold shadow-md hover:bg-teal-600 transition-colors disabled:opacity-50 flex justify-center items-center"
+                disabled={otp.length < 4 || loading}
               >
-                Verify & Login
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Verify & Login'}
               </button>
             </form>
           )}

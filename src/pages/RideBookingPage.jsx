@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { ArrowLeft, MapPin, Clock, Users, Calendar, Navigation, Bike, Car, Phone, CheckCircle, IndianRupee } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, MapPin, Clock, Users, Calendar, Navigation, Bike, Car, Phone, CheckCircle, IndianRupee, Loader2 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { shuttleRoutes, bikeRentals } from '../data/travelData';
+import { bikeRentals } from '../data/travelData'; // Still use local for bikes since we didn't add a table for it yet
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../config/supabase';
 
 const RideBookingPage = () => {
   const navigate = useNavigate();
@@ -12,6 +13,9 @@ const RideBookingPage = () => {
   
   const { user } = useAuth();
   
+  const [shuttleRoutes, setShuttleRoutes] = useState([]);
+  const [loadingRides, setLoadingRides] = useState(true);
+
   // Booking State
   const [selectedItem, setSelectedItem] = useState(null);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -33,6 +37,33 @@ const RideBookingPage = () => {
     startDate: new Date().toISOString().split('T')[0]
   });
 
+  useEffect(() => {
+    async function fetchRides() {
+      try {
+        const { data, error } = await supabase.from('rides').select('*');
+        if (error) throw error;
+        // Transform data from snake_case to camelCase
+        const mappedRides = data.map(r => ({
+          id: r.id,
+          from: r.from_location,
+          to: r.to_location,
+          distance: r.distance,
+          price: r.price,
+          vehicleType: r.vehicle_type,
+          departureTimes: r.departure_times || ['6:00 AM', '8:00 AM', '10:00 AM', '12:00 PM', '2:00 PM', '4:00 PM'],
+          totalSeats: r.total_seats,
+          icon: r.icon
+        }));
+        setShuttleRoutes(mappedRides);
+      } catch (error) {
+        console.error("Error fetching rides:", error);
+      } finally {
+        setLoadingRides(false);
+      }
+    }
+    fetchRides();
+  }, []);
+
   const handleBookShuttle = (route) => {
     setSelectedItem(route);
     setShuttleForm(prev => ({ ...prev, time: route.departureTimes[0] }));
@@ -47,6 +78,7 @@ const RideBookingPage = () => {
       alert("Please fill all fields.");
       return;
     }
+    // In a real app we'd push this to a 'bookings' table in Supabase
     setIsSuccess(true);
   };
 
@@ -282,7 +314,15 @@ const RideBookingPage = () => {
       <div className="p-4">
         {activeTab === 'shuttle' && (
           <div className="space-y-4">
-            {shuttleRoutes.map(route => (
+            {loadingRides ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+              </div>
+            ) : shuttleRoutes.length === 0 ? (
+              <div className="text-center py-10 text-gray-500">
+                No shuttle routes available.
+              </div>
+            ) : shuttleRoutes.map(route => (
               <div key={route.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center">

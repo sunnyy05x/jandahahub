@@ -1,33 +1,25 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { useCart } from '../context/CartContext';
-import { dhabaItems, bakeryItems } from '../data/foodItems';
-import { kiranaItems } from '../data/groceryItems';
-import { mandiItems } from '../data/mandiItems';
+import { supabase } from '../config/supabase';
 
 const categoryConfig = {
   food: {
     title: '🍛 Food Delivery',
     subcategories: [
-      { label: 'Local Dhabas', key: 'dhabas' },
+      { label: 'Local Dhabas', key: 'dhaba' },
       { label: 'Bakery & Fast Food', key: 'bakery' },
     ],
-    data: {
-      dhabas: dhabaItems,
-      bakery: bakeryItems,
-    },
   },
   kirana: {
     title: '🛒 Kirana Store',
     subcategories: null,
-    data: kiranaItems,
   },
   mandi: {
     title: '🥬 Fresh Mandi',
     subcategories: null,
-    data: mandiItems,
   },
 };
 
@@ -35,19 +27,38 @@ export default function CategoryPage() {
   const { category } = useParams();
   const navigate = useNavigate();
   const { cartItems } = useCart();
-
+  
   const config = categoryConfig[category];
   const [activeTab, setActiveTab] = useState(
     config?.subcategories ? config.subcategories[0].key : null
   );
 
-  const products = useMemo(() => {
-    if (!config) return [];
-    if (config.subcategories) {
-      return config.data[activeTab] || [];
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchProducts() {
+      if (!config) return;
+      setLoading(true);
+      try {
+        let query = supabase.from('products').select('*').eq('category', category);
+        
+        if (config.subcategories && activeTab) {
+          query = query.eq('subcategory', activeTab);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        setProducts(data || []);
+      } catch (err) {
+        console.error("Error fetching products:", err.message);
+      } finally {
+        setLoading(false);
+      }
     }
-    return config.data || [];
-  }, [config, activeTab]);
+
+    fetchProducts();
+  }, [category, activeTab, config]);
 
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const cartTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -58,7 +69,6 @@ export default function CategoryPage() {
         <div className="text-center">
           <p className="text-6xl mb-4">🔍</p>
           <h2 className="text-xl font-bold text-gray-800">Category Not Found</h2>
-          <p className="text-gray-500 mt-2">This category doesn't exist yet.</p>
           <button
             onClick={() => navigate('/')}
             className="mt-4 px-6 py-2 bg-teal-500 text-white rounded-full font-semibold"
@@ -104,7 +114,11 @@ export default function CategoryPage() {
 
       {/* Product List */}
       <div className="px-4 py-2 space-y-3">
-        {products.length > 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+          </div>
+        ) : products.length > 0 ? (
           products.map((item) => (
             <ProductCard key={item.id} product={item} />
           ))

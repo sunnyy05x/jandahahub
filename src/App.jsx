@@ -18,8 +18,19 @@ import DriverPanel from './pages/DriverPanel.jsx';
 import DeliveryPanel from './pages/DeliveryPanel.jsx';
 
 function App() {
-  const { isAuthenticated, isCustomer, isShopkeeper, isDriver, isDelivery, isAdmin } = useAuth();
+  const { isAuthenticated, isCustomer, isShopkeeper, isDriver, isDelivery, isAdmin, loading } = useAuth();
   const location = useLocation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="w-16 h-16 bg-gradient-to-tr from-teal-500 to-emerald-400 rounded-2xl mb-4"></div>
+          <p className="text-teal-600 font-bold">JandahaHub...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <LoginPage />;

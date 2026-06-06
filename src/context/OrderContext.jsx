@@ -1,46 +1,104 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { sampleOrders } from "../data/orders";
+import { supabase } from '../config/supabase';
+import { useAuth } from './AuthContext';
 
 const OrderContext = createContext(null);
 
-const ORDERS_STORAGE_KEY = 'jandahahub_orders';
-
 export function OrderProvider({ children }) {
-  const [orders, setOrders] = useState(() => {
-    try {
-      const stored = localStorage.getItem(ORDERS_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : sampleOrders;
-    } catch {
-      return sampleOrders;
-    }
-  });
+  const { user, currentRole } = useAuth();
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  // Fetch initial orders and set up realtime subscription
   useEffect(() => {
-    try {
-      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
-    } catch {
-      // silently fail
-    }
-  }, [orders]);
+    // If we're not logged in, we shouldn't fetch the massive orders list unless we have to, 
+    // but for the sake of the demo, we will fetch them all. Ideally, filter by user/role.
+    fetchOrders();
 
-  const addOrder = useCallback((order) => {
-    setOrders((prev) => [order, ...prev]);
+    const ordersSubscription = supabase
+      .channel('public:orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
+        if (payload.eventType === 'INSERT') {
+          setOrders(prev => [payload.new, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          setOrders(prev => prev.map(o => (o.id === payload.new.id ? payload.new : o)));
+        } else if (payload.eventType === 'DELETE') {
+          setOrders(prev => prev.filter(o => o.id !== payload.old.id));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ordersSubscription);
+    };
   }, []);
 
-  const updateOrderStatus = useCallback((orderId, newStatus) => {
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.id === orderId
-          ? {
-              ...order,
-              status: newStatus,
-              ...(newStatus === 'delivered'
-                ? { deliveredAt: new Date().toISOString() }
-                : {}),
-            }
-          : order
-      )
-    );
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      // In a real app we would restrict this based on role using RLS, 
+      // e.g. Customer only sees their orders, Shopkeeper sees orders for their shop.
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('placed_at', { ascending: false });
+        
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (err) {
+      console.error("Error fetching orders:", err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addOrder = useCallback(async (orderData) => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .insert([{
+          customer_id: user?.id || null,
+          customer_name: orderData.name,
+          customer_phone: orderData.phone,
+          customer_address: orderData.address,
+          shop_name: orderData.shopName,
+          items: orderData.items,
+          subtotal: orderData.subtotal,
+          delivery_fee: orderData.deliveryFee,
+          total: orderData.total,
+          status: 'pending',
+          payment_method: 'COD'
+        }])
+        .select();
+        
+      if (error) throw error;
+      return data[0];
+    } catch (err) {
+      console.error("Error adding order:", err.message);
+      throw err;
+    }
+  }, [user]);
+
+  const updateOrderStatus = useCallback(async (orderId, newStatus) => {
+    try {
+      // Optimistic update
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === orderId ? { ...order, status: newStatus } : order
+        )
+      );
+      
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('id', orderId);
+        
+      if (error) throw error;
+    } catch (err) {
+      console.error("Error updating order status:", err.message);
+      // Revert fetch on error
+      fetchOrders();
+    }
   }, []);
 
   const getOrdersByStatus = useCallback(
@@ -48,7 +106,7 @@ export function OrderProvider({ children }) {
       if (!status || status === 'all') return orders;
       if (status === 'active') {
         return orders.filter((o) =>
-          ['pending', 'confirmed', 'out_for_delivery'].includes(o.status)
+          ['pending', 'confirmed', 'preparing', 'ready', 'accepted', 'picked_up', 'out_for_delivery'].includes(o.status)
         );
       }
       if (status === 'completed') {
@@ -62,11 +120,12 @@ export function OrderProvider({ children }) {
   const value = useMemo(
     () => ({
       orders,
+      loading,
       addOrder,
       updateOrderStatus,
       getOrdersByStatus,
     }),
-    [orders, addOrder, updateOrderStatus, getOrdersByStatus]
+    [orders, loading, addOrder, updateOrderStatus, getOrdersByStatus]
   );
 
   return <OrderContext.Provider value={value}>{children}</OrderContext.Provider>;
