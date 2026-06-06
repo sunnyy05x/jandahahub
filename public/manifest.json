@@ -1,0 +1,25 @@
+{
+  "name": "JandahaHub — Village Super App",
+  "short_name": "JandahaHub",
+  "description": "Your hyper-local super app for food delivery, groceries, fresh mandi, town shuttle & bike rentals in Jandaha.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#0D9488",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["food", "shopping", "transportation"]
+}
