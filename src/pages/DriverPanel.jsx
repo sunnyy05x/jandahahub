@@ -14,7 +14,8 @@ export default function DriverPanel() {
   // Bidding Modal State
   const [isBidding, setIsBidding] = useState(false);
   const [selectedRide, setSelectedRide] = useState(null);
-  const [bidForm, setBidForm] = useState({ vehicle_name: 'Auto Rickshaw', vehicle_number: '', bid_price: '' });
+  const { updateProfile } = useAuth();
+  const [bidForm, setBidForm] = useState({ vehicle_name: 'Auto Rickshaw', vehicle_number: '', bid_price: '', phone: user?.phone || '' });
   const [submittingBid, setSubmittingBid] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -64,16 +65,20 @@ export default function DriverPanel() {
 
   const openBidModal = (ride) => {
     setSelectedRide(ride);
-    setBidForm({ vehicle_name: 'Auto Rickshaw', vehicle_number: '', bid_price: ride.price || '' });
+    setBidForm({ vehicle_name: 'Auto Rickshaw', vehicle_number: '', bid_price: ride.price || '', phone: user?.phone || '' });
     setIsBidding(true);
   };
 
   const submitBid = async (e) => {
     e.preventDefault();
-    if (!bidForm.vehicle_number || !bidForm.bid_price) return alert('Please fill all fields');
+    if (!bidForm.vehicle_number || !bidForm.bid_price || !bidForm.phone) return alert('Please fill all fields');
     
     setSubmittingBid(true);
     try {
+      if (bidForm.phone !== user?.phone) {
+        await updateProfile({ phone: bidForm.phone });
+      }
+
       const { error } = await supabase.from('ride_bids').insert([{
         booking_id: selectedRide.id,
         driver_id: user.id,
@@ -234,6 +239,10 @@ export default function DriverPanel() {
               <div>
                 <label className="text-xs font-bold text-gray-500 uppercase ml-1">Your Price (₹)</label>
                 <input required type="number" value={bidForm.bid_price} onChange={e => setBidForm({...bidForm, bid_price: e.target.value})} className="w-full mt-1 p-3 bg-slate-50 border-transparent rounded-xl font-bold text-lg" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Your Phone Number</label>
+                <input required type="tel" value={bidForm.phone} onChange={e => setBidForm({...bidForm, phone: e.target.value})} placeholder="e.g. 9876543210" className="w-full mt-1 p-3 bg-slate-50 border-transparent rounded-xl" />
               </div>
               <button type="submit" disabled={submittingBid} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl flex items-center justify-center mt-2">
                 {submittingBid ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Send Offer to Customer'}

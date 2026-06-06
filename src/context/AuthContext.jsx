@@ -97,6 +97,17 @@ export function AuthProvider({ children }) {
     }
   }, [user]);
 
+  const updateProfile = async (updates) => {
+    if (!user?.id) return;
+    try {
+      const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
+      if (error) throw error;
+      setUser(prev => ({ ...prev, ...updates }));
+    } catch (err) {
+      console.error("Failed to update profile:", err);
+    }
+  };
+
   const isCustomer = useCallback(() => currentRole === 'customer', [currentRole]);
   const isShopkeeper = useCallback(() => currentRole === 'shopkeeper', [currentRole]);
   const isDriver = useCallback(() => currentRole === 'driver', [currentRole]);
@@ -112,13 +123,14 @@ export function AuthProvider({ children }) {
       loginWithGoogle,
       logout,
       switchRole,
+      updateProfile,
       isCustomer,
       isShopkeeper,
       isDriver,
       isDelivery,
       isAdmin,
     }),
-    [isAuthenticated, user, currentRole, loading, switchRole, isCustomer, isShopkeeper, isDriver, isDelivery, isAdmin]
+    [isAuthenticated, user, currentRole, loading, switchRole, updateProfile, isCustomer, isShopkeeper, isDriver, isDelivery, isAdmin]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

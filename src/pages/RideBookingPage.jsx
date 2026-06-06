@@ -6,15 +6,15 @@ import { supabase } from '../config/supabase';
 
 export default function RideBookingPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   
   // Phase: 'input' -> 'searching' -> 'accepted'
   const [phase, setPhase] = useState('input');
   
-  // Form Data
   const [fromLoc, setFromLoc] = useState('');
   const [toLoc, setToLoc] = useState('');
   const [proposedFare, setProposedFare] = useState('');
+  const [phone, setPhone] = useState(user?.phone || '');
   
   const [bookingId, setBookingId] = useState(null);
   const [bids, setBids] = useState([]);
@@ -37,10 +37,14 @@ export default function RideBookingPage() {
   };
 
   const requestRide = async () => {
-    if (!fromLoc || !toLoc || !proposedFare) return alert('Please fill in all fields.');
+    if (!fromLoc || !toLoc || !proposedFare || !phone) return alert('Please fill in all fields.');
     setLoading(true);
     
     try {
+      if (phone !== user?.phone) {
+        await updateProfile({ phone });
+      }
+
       // Fetch Hindi translations for driver convenience
       const fromHi = await translateToHindi(fromLoc);
       const toHi = await translateToHindi(toLoc);
@@ -51,7 +55,7 @@ export default function RideBookingPage() {
       const { data, error } = await supabase.from('ride_bookings').insert([{
         customer_id: user?.id,
         customer_name: user?.name || 'Customer',
-        customer_phone: user?.phone || '9999999999',
+        customer_phone: phone,
         from_location: formattedFrom,
         to_location: formattedTo,
         vehicle_type: 'Any',
@@ -181,10 +185,21 @@ export default function RideBookingPage() {
             </div>
             <p className="text-xs text-gray-500 mt-2 ml-1">Drivers will see your offer and can accept or counter it.</p>
           </div>
+
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+            <label className="text-xs font-bold text-gray-500 uppercase ml-1">Your Phone Number</label>
+            <input 
+              type="tel" 
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="e.g. 9876543210" 
+              className="w-full mt-1 p-3 bg-slate-50 border-transparent rounded-xl focus:ring-2 focus:ring-teal-500 font-medium"
+            />
+          </div>
           
           <button 
             onClick={requestRide}
-            disabled={loading || !fromLoc || !toLoc || !proposedFare}
+            disabled={loading || !fromLoc || !toLoc || !proposedFare || !phone}
             className="w-full bg-teal-600 text-white font-bold py-4 rounded-xl shadow-md disabled:bg-gray-300 flex items-center justify-center transition-colors"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Request Ride'}

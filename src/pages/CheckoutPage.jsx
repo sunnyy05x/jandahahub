@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 const CheckoutPage = () => {
   const { cartItems, getCartTotal, getDeliveryFee, getGrandTotal, clearCart } = useCart();
   const { addOrder } = useOrders();
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -61,6 +61,10 @@ const CheckoutPage = () => {
       };
 
       const newOrder = await addOrder(orderData);
+      
+      // Save phone and address to user profile for next time!
+      await updateProfile({ phone: formData.phone, address: formData.address });
+
       setPlacedOrderId(newOrder?.id?.substring(0, 8) || 'NEW');
       clearCart();
       setIsSuccess(true);
