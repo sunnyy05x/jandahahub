@@ -55,9 +55,25 @@ export default function DriverPanel() {
   useEffect(() => {
     fetchData();
 
+    // Ask for notification permission if not asked yet
+    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
+
     // Listen for new ride requests
     const channel = supabase.channel('driver-panel')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_bookings' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_bookings' }, (payload) => {
+        // Trigger push notification on new ride request
+        if (payload.eventType === 'INSERT' && payload.new.status === 'searching') {
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('New Ride Request! 🛺', {
+              body: `${payload.new.from_location} ➔ ${payload.new.to_location}\nFare: ₹${payload.new.price}`,
+              vibrate: [200, 100, 200]
+            });
+          }
+        }
+        fetchData();
+      })
       .subscribe();
 
     return () => supabase.removeChannel(channel);

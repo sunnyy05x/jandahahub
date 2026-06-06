@@ -69,18 +69,10 @@ const InstallBanner = () => {
       <div className="flex gap-2">
         <button 
           onClick={handleInstallClick}
-          className="flex-1 bg-white text-teal-600 font-bold py-2 px-4 rounded-xl text-sm flex items-center justify-center"
+          className="w-full bg-white text-teal-600 font-bold py-3 px-4 rounded-xl text-sm flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors"
         >
-          {deferredPrompt ? '📲 Install App' : '📲 Install App'}
+          📲 Add to Home Screen
         </button>
-        {!deferredPrompt && (
-          <button 
-            onClick={() => alert('APK download is coming soon!')}
-            className="flex-1 bg-teal-700/50 hover:bg-teal-700/70 text-white font-bold py-2 px-4 rounded-xl text-sm flex items-center justify-center"
-          >
-            <Download className="w-4 h-4 mr-1" /> APK
-          </button>
-        )}
       </div>
     </div>
   );
