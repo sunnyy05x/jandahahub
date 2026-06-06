@@ -31,7 +31,7 @@ export function AuthProvider({ children }) {
         setUser(null);
         setCurrentRole(null);
         setIsAuthenticated(false);
-        localStorage.removeItem('jandahahub_role'); // Clear explicit role override
+        setIsAuthenticated(false);
       }
     });
 
@@ -52,10 +52,7 @@ export function AuthProvider({ children }) {
       if (profile) {
         setUser({ ...authUser, ...profile });
         
-        // If we stored a temporary role override in localStorage for testing, use it
-        // Otherwise use the role from the database.
-        const storedOverride = localStorage.getItem('jandahahub_role');
-        setCurrentRole(storedOverride || profile.role || 'customer');
+        setCurrentRole(profile.role || 'customer');
         setIsAuthenticated(true);
       } else if (error && error.code === 'PGRST116') {
         // Profile doesn't exist yet, create one!
@@ -95,7 +92,6 @@ export function AuthProvider({ children }) {
   const switchRole = useCallback(async (role) => {
     if (['customer', 'shopkeeper', 'driver', 'delivery', 'admin'].includes(role)) {
       setCurrentRole(role);
-      localStorage.setItem('jandahahub_role', role);
       // In production, we would update the database role here if authorized.
       // await supabase.from('profiles').update({ role }).eq('id', user.id);
     }
