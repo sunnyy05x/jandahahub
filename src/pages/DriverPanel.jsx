@@ -10,6 +10,9 @@ export default function DriverPanel() {
   const [myRides, setMyRides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [notificationStatus, setNotificationStatus] = useState(
+    'Notification' in window ? Notification.permission : 'denied'
+  );
 
   // Bidding Modal State
   const [isBidding, setIsBidding] = useState(false);
@@ -55,9 +58,9 @@ export default function DriverPanel() {
   useEffect(() => {
     fetchData();
 
-    // Ask for notification permission if not asked yet
-    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-      Notification.requestPermission();
+    // Update notification status on mount
+    if ('Notification' in window) {
+      setNotificationStatus(Notification.permission);
     }
 
     // Listen for new ride requests
@@ -78,6 +81,18 @@ export default function DriverPanel() {
 
     return () => supabase.removeChannel(channel);
   }, [fetchData]);
+
+  const requestNotificationPermission = async () => {
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission();
+      setNotificationStatus(permission);
+      if (permission === 'granted') {
+        alert("Success! You will now be alerted when a new ride request arrives.");
+      } else {
+        alert("Notifications were blocked. Please enable them in your browser settings.");
+      }
+    }
+  };
 
   const openBidModal = (ride) => {
     setSelectedRide(ride);
@@ -159,6 +174,18 @@ export default function DriverPanel() {
         <div className="flex justify-center py-16"><Loader2 className="w-10 h-10 text-blue-500 animate-spin" /></div>
       ) : activeTab === 'requests' ? (
         <div className="space-y-4">
+          {notificationStatus === 'default' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-blue-800 text-sm">Enable Notifications</h3>
+                <p className="text-xs text-blue-600 mt-1">Get instantly alerted when a customer requests a ride.</p>
+              </div>
+              <button onClick={requestNotificationPermission} className="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-sm whitespace-nowrap ml-2">
+                Allow
+              </button>
+            </div>
+          )}
+
           {requests.length === 0 ? (
             <div className="text-center py-16 text-gray-400">No ride requests nearby.</div>
           ) : requests.map(r => (
