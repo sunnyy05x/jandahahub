@@ -129,6 +129,7 @@ function OverviewTab() {
 // ── USERS TAB ───────────────────────────────────────────────────────────────
 
 function UsersTab() {
+  const { user, switchRole } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
@@ -161,6 +162,11 @@ function UsersTab() {
     try {
       const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
       if (error) throw error;
+
+      // If the admin is changing their own role, instantly update the UI!
+      if (user && userId === user.id) {
+        switchRole(newRole);
+      }
     } catch (err) {
       console.error('Error updating role:', err);
       alert('Failed to update role.');
