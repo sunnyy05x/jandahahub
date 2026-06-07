@@ -9,6 +9,7 @@ const categoryConfig = {
   food: {
     title: '🍛 Food Delivery',
     subcategories: [
+      { label: 'All', key: 'all' },
       { label: 'Local Dhabas', key: 'dhaba' },
       { label: 'Bakery & Fast Food', key: 'bakery' },
     ],
@@ -41,10 +42,11 @@ export default function CategoryPage() {
       if (!config) return;
       setLoading(true);
       try {
-        let query = supabase.from('products').select('*').eq('category', category);
+        let query = supabase.from('products').select('*').eq('category', category).order('created_at', { ascending: false });
         
-        if (config.subcategories && activeTab) {
-          query = query.eq('subcategory', activeTab);
+        if (config.subcategories && activeTab && activeTab !== 'all') {
+          // use ilike for case-insensitive matching
+          query = query.ilike('subcategory', activeTab);
         }
 
         const { data, error } = await query;

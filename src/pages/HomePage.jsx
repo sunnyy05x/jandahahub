@@ -26,12 +26,38 @@ const categories = [
     gradient: 'from-green-400 to-lime-500',
     path: '/category/mandi',
   },
+  {
+    emoji: '🛺',
+    title: 'Town Shuttle',
+    subtitle: 'Book Shared Rides',
+    gradient: 'from-blue-400 to-indigo-600',
+    path: '/rides',
+  },
+  {
+    emoji: '🏍️',
+    title: 'Rent a Bike',
+    subtitle: 'Daily Rentals',
+    gradient: 'from-purple-400 to-pink-500',
+    path: '/rides?tab=bike',
+  },
+  {
+    emoji: '✨',
+    title: 'More Coming',
+    subtitle: 'Stay Tuned!',
+    gradient: 'from-gray-300 to-gray-400',
+    path: null,
+    disabled: true,
+  },
 ];
 
 const promos = [
   {
     text: '🎉 Free Delivery on orders above ₹300!',
     gradient: 'from-orange-400 to-pink-500',
+  },
+  {
+    text: '🛺 New! Book Town Shuttle seats online',
+    gradient: 'from-blue-400 to-indigo-500',
   },
   {
     text: '📦 Monthly Ration Kit — ₹1999 only',
@@ -82,7 +108,7 @@ export default function HomePage() {
         {categories.map((cat) => (
           <div
             key={cat.title}
-            className={cat.disabled ? 'opacity-60' : 'cursor-pointer'}
+            className={cat.disabled ? 'opacity-60' : ''}
             onClick={() => handleCategoryClick(cat)}
           >
             <CategoryCard
