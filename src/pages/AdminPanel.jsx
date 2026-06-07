@@ -58,7 +58,7 @@ function StatCard({ icon: Icon, iconColor, label, value, loading }) {
 
 // ── OVERVIEW TAB ────────────────────────────────────────────────────────────
 
-function OverviewTab() {
+function OverviewTab({ currentRole, switchRole }) {
   const [stats, setStats] = useState({ totalOrders: 0, pendingOrders: 0, totalUsers: 0, totalBookings: 0, revenue: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -515,7 +515,7 @@ export default function AdminPanel() {
 
       {/* Content */}
       <div className="p-4 -mt-4 relative z-10">
-        {activeTab === 'overview' && <OverviewTab />}
+        {activeTab === 'overview' && <OverviewTab currentRole={currentRole} switchRole={switchRole} />}
         {activeTab === 'users' && <UsersTab />}
         {activeTab === 'orders' && <OrdersTab />}
         {activeTab === 'products' && <ProductsTab />}
