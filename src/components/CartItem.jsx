@@ -21,9 +21,12 @@ export default function CartItem({ item }) {
 
   return (
     <div className="flex items-center gap-3 py-3 border-b border-gray-100 last:border-b-0">
-      {/* Emoji */}
-      <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center">
-        <span className="text-3xl">{item.image}</span>
+      <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center overflow-hidden border border-slate-100">
+        {item.image?.startsWith('http') ? (
+          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-3xl">{item.image || '📦'}</span>
+        )}
       </div>
 
       {/* Name + Price */}

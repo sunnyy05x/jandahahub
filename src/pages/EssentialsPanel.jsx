@@ -42,9 +42,7 @@ function borderColor(status) {
   }
 }
 
-// ── Component ────────────────────────────────────────────────────────────────
-
-export default function ShopkeeperPanel() {
+export default function EssentialsPanel() {
   const { user } = useAuth();
   
   const [activeTab, setActiveTab] = useState('orders'); // 'orders' or 'products'
@@ -58,7 +56,37 @@ export default function ShopkeeperPanel() {
   // Product Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [formData, setFormData] = useState({ name: '', price: '', category: 'food', subcategory: '', image: '📦', in_stock: true });
+  const [formData, setFormData] = useState({ name: '', price: '', category: 'essentials', subcategory: '', image: '', in_stock: true });
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `essentials/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      setFormData(prev => ({ ...prev, image: data.publicUrl }));
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Error uploading image. Make sure the database bucket is configured!');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   // ── Fetch Data ───────────────────────────────────────────────────────────
 
@@ -184,7 +212,7 @@ export default function ShopkeeperPanel() {
       });
     } else {
       setEditingProduct(null);
-      setFormData({ name: '', price: '', category: 'food', subcategory: '', image: '📦', in_stock: true });
+      setFormData({ name: '', price: '', category: 'essentials', subcategory: '', image: '', in_stock: true });
     }
     setIsModalOpen(true);
   };
@@ -200,8 +228,8 @@ export default function ShopkeeperPanel() {
       <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-800">Shop Dashboard</h2>
-            <p className="text-gray-500 text-sm mt-0.5">Welcome, {user?.shop_name || user?.name || 'Shopkeeper'}</p>
+            <h2 className="text-xl font-bold text-gray-800">Essentials Dashboard</h2>
+            <p className="text-gray-500 text-sm mt-0.5">Welcome, {user?.shop_name || user?.name || 'Owner'}</p>
           </div>
           <button onClick={fetchData} className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors">
             <RefreshCw className="w-5 h-5 text-gray-500" />
@@ -246,11 +274,11 @@ export default function ShopkeeperPanel() {
             </div>
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3 text-center">
               <p className="text-2xl font-bold text-orange-700">{preparingCount}</p>
-              <p className="text-xs text-orange-600 font-medium mt-0.5">Preparing</p>
+              <p className="text-xs text-orange-600 font-medium mt-0.5">Packing</p>
             </div>
             <div className="bg-green-50 border border-green-200 rounded-2xl p-3 text-center">
               <p className="text-2xl font-bold text-green-700">{readyCount}</p>
-              <p className="text-xs text-green-600 font-medium mt-0.5">Ready</p>
+              <p className="text-xs text-green-600 font-medium mt-0.5">Ready to Ship</p>
             </div>
           </div>
 
@@ -289,11 +317,11 @@ export default function ShopkeeperPanel() {
                     </div>
                     {order.status === 'pending' || order.status === 'confirmed' ? (
                       <button onClick={() => updateOrderStatus(order.id, 'preparing')} disabled={updatingId === order.id} className="bg-teal-500 text-white text-sm font-bold py-2 px-4 rounded-xl flex items-center gap-1.5">
-                        {updatingId === order.id && <Loader2 className="w-4 h-4 animate-spin" />} Accept Order
+                        {updatingId === order.id && <Loader2 className="w-4 h-4 animate-spin" />} Pack Order
                       </button>
                     ) : order.status === 'preparing' ? (
                       <button onClick={() => updateOrderStatus(order.id, 'ready')} disabled={updatingId === order.id} className="bg-green-500 text-white text-sm font-bold py-2 px-4 rounded-xl flex items-center gap-1.5">
-                        {updatingId === order.id && <Loader2 className="w-4 h-4 animate-spin" />} Mark Ready
+                        {updatingId === order.id && <Loader2 className="w-4 h-4 animate-spin" />} Ready to Ship
                       </button>
                     ) : (
                       <span className="text-sm font-bold text-green-600 flex items-center gap-1"><CheckCircle className="w-4 h-4" /> Waiting for Rider</span>
@@ -323,8 +351,12 @@ export default function ShopkeeperPanel() {
             {products.map(p => (
               <div key={p.id} className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-2xl">
-                    {p.image}
+                  <div className="w-16 h-16 bg-slate-50 rounded-xl flex items-center justify-center text-2xl overflow-hidden shrink-0 border border-slate-100">
+                    {p.image?.startsWith('http') ? (
+                      <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{p.image || '🥚'}</span>
+                    )}
                   </div>
                   <div>
                     <p className="font-bold text-sm text-gray-800">{p.name}</p>
@@ -359,9 +391,27 @@ export default function ShopkeeperPanel() {
                       <label className="text-xs font-bold text-gray-500 uppercase ml-1">Price (₹)</label>
                       <input required type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="w-full mt-1 p-3 bg-slate-50 border-transparent rounded-xl focus:ring-2 focus:ring-teal-500" placeholder="0" />
                     </div>
-                    <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase ml-1">Icon/Emoji</label>
-                      <input required type="text" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} className="w-full mt-1 p-3 bg-slate-50 border-transparent rounded-xl focus:ring-2 focus:ring-teal-500 text-center text-xl" />
+                    <div className="col-span-2">
+                      <label className="text-xs font-bold text-gray-500 uppercase ml-1">Item Photo</label>
+                      <div className="flex items-center gap-4 mt-1">
+                        <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center border border-slate-200 overflow-hidden shrink-0">
+                          {formData.image?.startsWith('http') ? (
+                            <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-gray-400">📷</span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={handleImageUpload} 
+                            disabled={uploadingImage}
+                            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 cursor-pointer" 
+                          />
+                          {uploadingImage && <p className="text-xs text-teal-600 mt-1 flex items-center"><Loader2 className="w-3 h-3 animate-spin mr-1"/> Uploading...</p>}
+                        </div>
+                      </div>
                     </div>
                     <div>
                       <label className="text-xs font-bold text-gray-500 uppercase ml-1">Category</label>

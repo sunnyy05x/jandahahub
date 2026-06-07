@@ -13,12 +13,14 @@ import RideBookingPage from './pages/RideBookingPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 
 import AdminPanel from './pages/AdminPanel.jsx';
-import ShopkeeperPanel from './pages/ShopkeeperPanel.jsx';
+import RestaurantPanel from './pages/RestaurantPanel.jsx';
+import GroceryPanel from './pages/GroceryPanel.jsx';
+import EssentialsPanel from './pages/EssentialsPanel.jsx';
 import DriverPanel from './pages/DriverPanel.jsx';
 import DeliveryPanel from './pages/DeliveryPanel.jsx';
 
 function App() {
-  const { isAuthenticated, isCustomer, isShopkeeper, isDriver, isDelivery, isAdmin, loading } = useAuth();
+  const { isAuthenticated, isCustomer, isRestaurant, isGrocery, isEssentials, isDriver, isDelivery, isAdmin, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -42,7 +44,9 @@ function App() {
 
       <main className="safe-bottom">
         {isAdmin() && <AdminPanel />}
-        {isShopkeeper() && <ShopkeeperPanel />}
+        {isRestaurant() && <RestaurantPanel />}
+        {isGrocery() && <GroceryPanel />}
+        {isEssentials() && <EssentialsPanel />}
         {isDriver() && <DriverPanel />}
         {isDelivery() && <DeliveryPanel />}
         

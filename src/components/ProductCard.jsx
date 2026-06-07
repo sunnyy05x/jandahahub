@@ -31,8 +31,12 @@ export default function ProductCard({ product }) {
       }`}
     >
       {/* Left: Emoji on circle */}
-      <div className="flex-shrink-0 w-16 h-16 rounded-full bg-teal-50 flex items-center justify-center">
-        <span className="text-5xl leading-none">{product.image}</span>
+      <div className="w-24 shrink-0 bg-slate-50 flex items-center justify-center overflow-hidden border-r border-slate-100">
+        {product.image?.startsWith('http') ? (
+          <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-5xl leading-none">{product.image || '📦'}</span>
+        )}
       </div>
 
       {/* Right: Details */}

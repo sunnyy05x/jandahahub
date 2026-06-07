@@ -10,7 +10,9 @@ import { supabase } from '../config/supabase';
 
 const ROLE_COLORS = {
   customer:   { bg: 'bg-teal-100',    text: 'text-teal-700' },
-  shopkeeper: { bg: 'bg-orange-100',  text: 'text-orange-700' },
+  restaurant: { bg: 'bg-orange-100',  text: 'text-orange-700' },
+  grocery:    { bg: 'bg-green-100',   text: 'text-green-700' },
+  essentials: { bg: 'bg-yellow-100',  text: 'text-yellow-700' },
   driver:     { bg: 'bg-blue-100',    text: 'text-blue-700' },
   delivery:   { bg: 'bg-emerald-100', text: 'text-emerald-700' },
   admin:      { bg: 'bg-red-100',     text: 'text-red-700' },
@@ -28,7 +30,7 @@ const STATUS_COLORS = {
   cancelled:        { bg: 'bg-red-100',     text: 'text-red-700' },
 };
 
-const ROLES = ['customer', 'shopkeeper', 'driver', 'delivery', 'admin'];
+const ROLES = ['customer', 'restaurant', 'grocery', 'essentials', 'driver', 'delivery', 'admin'];
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
@@ -101,6 +103,27 @@ function OverviewTab() {
 
   return (
     <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <button onClick={() => switchRole('customer')} className={`p-3 rounded-xl border-2 font-bold flex flex-col items-center justify-center transition-all ${currentRole === 'customer' ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+          <span className="text-2xl mb-1">👤</span> Customer
+        </button>
+        <button onClick={() => switchRole('restaurant')} className={`p-3 rounded-xl border-2 font-bold flex flex-col items-center justify-center transition-all ${currentRole === 'restaurant' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+          <span className="text-2xl mb-1">👨‍🍳</span> Restaurant
+        </button>
+        <button onClick={() => switchRole('grocery')} className={`p-3 rounded-xl border-2 font-bold flex flex-col items-center justify-center transition-all ${currentRole === 'grocery' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+          <span className="text-2xl mb-1">🛒</span> Grocery
+        </button>
+        <button onClick={() => switchRole('essentials')} className={`p-3 rounded-xl border-2 font-bold flex flex-col items-center justify-center transition-all ${currentRole === 'essentials' ? 'border-yellow-500 bg-yellow-50 text-yellow-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+          <span className="text-2xl mb-1">🥚</span> Essentials
+        </button>
+        <button onClick={() => switchRole('driver')} className={`p-3 rounded-xl border-2 font-bold flex flex-col items-center justify-center transition-all ${currentRole === 'driver' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+          <span className="text-2xl mb-1">🛺</span> Driver
+        </button>
+        <button onClick={() => switchRole('delivery')} className={`p-3 rounded-xl border-2 font-bold flex flex-col items-center justify-center transition-all ${currentRole === 'delivery' ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+          <span className="text-2xl mb-1">🛵</span> Delivery
+        </button>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <StatCard icon={ShoppingBag} iconColor="text-orange-500" label="Total Orders" value={stats.totalOrders} loading={loading} />
         <StatCard icon={Package} iconColor="text-yellow-500" label="Pending" value={stats.pendingOrders} loading={loading} />
@@ -379,7 +402,13 @@ function ProductsTab() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-1">
-                {p.image && <span className="text-lg">{p.image}</span>}
+                {p.image?.startsWith('http') ? (
+                  <div className="w-8 h-8 rounded-md overflow-hidden shrink-0 border border-slate-200">
+                    <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  p.image && <span className="text-lg">{p.image}</span>
+                )}
                 <h4 className="font-bold text-sm text-gray-800 truncate">{p.name}</h4>
               </div>
               <div className="flex flex-wrap gap-1.5 mb-2">

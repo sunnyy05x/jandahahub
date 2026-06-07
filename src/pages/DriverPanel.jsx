@@ -21,6 +21,31 @@ export default function DriverPanel() {
   const [bidForm, setBidForm] = useState({ vehicle_name: 'Auto Rickshaw', vehicle_number: '', bid_price: '', phone: user?.phone || '' });
   const [submittingBid, setSubmittingBid] = useState(false);
 
+  const playPopSound = useCallback(() => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.type = 'sine';
+      // Pop effect: drop frequency rapidly
+      oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+
+      // Fade out volume quickly
+      gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.1);
+    } catch (e) {
+      console.log('Audio playback failed', e);
+    }
+  }, []);
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -68,6 +93,7 @@ export default function DriverPanel() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_bookings' }, (payload) => {
         // Trigger push notification on new ride request
         if (payload.eventType === 'INSERT' && payload.new.status === 'searching') {
+          playPopSound();
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('New Ride Request! 🛺', {
               body: `${payload.new.from_location} ➔ ${payload.new.to_location}\nFare: ₹${payload.new.price}`,

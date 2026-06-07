@@ -90,7 +90,7 @@ export function AuthProvider({ children }) {
 
   // For testing purposes, allow quick role switching if logged in
   const switchRole = useCallback(async (role) => {
-    if (['customer', 'shopkeeper', 'driver', 'delivery', 'admin'].includes(role)) {
+    if (['customer', 'restaurant', 'grocery', 'essentials', 'driver', 'delivery', 'admin'].includes(role)) {
       setCurrentRole(role);
       // In production, we would update the database role here if authorized.
       // await supabase.from('profiles').update({ role }).eq('id', user.id);
@@ -109,7 +109,9 @@ export function AuthProvider({ children }) {
   };
 
   const isCustomer = useCallback(() => currentRole === 'customer', [currentRole]);
-  const isShopkeeper = useCallback(() => currentRole === 'shopkeeper', [currentRole]);
+  const isRestaurant = useCallback(() => currentRole === 'restaurant', [currentRole]);
+  const isGrocery = useCallback(() => currentRole === 'grocery', [currentRole]);
+  const isEssentials = useCallback(() => currentRole === 'essentials', [currentRole]);
   const isDriver = useCallback(() => currentRole === 'driver', [currentRole]);
   const isDelivery = useCallback(() => currentRole === 'delivery', [currentRole]);
   const isAdmin = useCallback(() => currentRole === 'admin', [currentRole]);
@@ -125,12 +127,14 @@ export function AuthProvider({ children }) {
       switchRole,
       updateProfile,
       isCustomer,
-      isShopkeeper,
+      isRestaurant,
+      isGrocery,
+      isEssentials,
       isDriver,
       isDelivery,
       isAdmin,
     }),
-    [isAuthenticated, user, currentRole, loading, switchRole, updateProfile, isCustomer, isShopkeeper, isDriver, isDelivery, isAdmin]
+    [isAuthenticated, user, currentRole, loading, switchRole, updateProfile, isCustomer, isRestaurant, isGrocery, isEssentials, isDriver, isDelivery, isAdmin]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

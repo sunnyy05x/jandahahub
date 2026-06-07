@@ -7,7 +7,9 @@ export default function Header() {
 
   const roleLabels = {
     customer: 'Customer',
-    shopkeeper: 'Shopkeeper',
+    restaurant: 'Restaurant',
+    grocery: 'Grocery',
+    essentials: 'Essentials',
     driver: 'Driver',
     delivery: 'Delivery',
     admin: 'Admin'
