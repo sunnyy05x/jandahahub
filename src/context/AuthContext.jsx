@@ -52,7 +52,10 @@ export function AuthProvider({ children }) {
       if (profile) {
         setUser({ ...authUser, ...profile });
         
-        setCurrentRole(profile.role || 'customer');
+        let role = profile.role || 'customer';
+        if (role === 'shopkeeper') role = 'restaurant';
+        
+        setCurrentRole(role);
         setIsAuthenticated(true);
       } else if (error && error.code === 'PGRST116') {
         // Profile doesn't exist yet, create one!
