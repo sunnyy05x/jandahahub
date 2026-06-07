@@ -6,39 +6,28 @@ import InstallBanner from '../components/InstallBanner';
 
 const categories = [
   {
-    emoji: '🍛',
     title: 'Food Delivery',
     subtitle: 'Dhabas & Fast Food',
-    gradient: 'from-orange-400 to-red-500',
+    image: '/images/food_v2.png',
     path: '/category/food',
   },
   {
-    emoji: '🛒',
-    title: 'Kirana Store',
-    subtitle: 'Groceries & Ration',
-    gradient: 'from-teal-400 to-emerald-600',
-    path: '/category/kirana',
-  },
-  {
-    emoji: '🥬',
-    title: 'Fresh Mandi',
-    subtitle: 'Milk, Eggs, Veggies',
-    gradient: 'from-green-400 to-lime-500',
-    path: '/category/mandi',
-  },
-  {
-    emoji: '🛺',
     title: 'Town Shuttle',
     subtitle: 'Book Shared Rides',
-    gradient: 'from-blue-400 to-indigo-600',
+    image: '/images/shuttle.png',
     path: '/rides',
   },
   {
-    emoji: '🏍️',
-    title: 'Rent a Bike',
-    subtitle: 'Daily Rentals',
-    gradient: 'from-purple-400 to-pink-500',
-    path: '/rides?tab=bike',
+    title: 'Kirana Store',
+    subtitle: 'Groceries & Ration',
+    image: '/images/grocery.png',
+    path: '/category/kirana',
+  },
+  {
+    title: 'Fresh Mandi',
+    subtitle: 'Milk, Eggs, Veggies',
+    image: '/images/essentials.png',
+    path: '/category/mandi',
   },
   {
     emoji: '✨',
@@ -117,6 +106,7 @@ export default function HomePage() {
               subtitle={cat.subtitle}
               gradient={cat.gradient}
               disabled={cat.disabled}
+              image={cat.image}
             />
           </div>
         ))}
