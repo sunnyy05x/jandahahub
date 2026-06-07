@@ -24,7 +24,7 @@ const categoryConfig = {
 };
 
 export default function CategoryPage() {
-  const { category } = useParams();
+  const { categoryId: category } = useParams();
   const navigate = useNavigate();
   const { cartItems } = useCart();
   
