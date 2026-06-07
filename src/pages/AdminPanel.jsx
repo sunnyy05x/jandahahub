@@ -479,7 +479,7 @@ const TABS = [
 ];
 
 export default function AdminPanel() {
-  const { user } = useAuth();
+  const { user, currentRole, switchRole } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
 
   return (
