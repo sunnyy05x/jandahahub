@@ -59,7 +59,15 @@ export default function DriverPanel() {
         .order('created_at', { ascending: false });
 
       if (reqErr) throw reqErr;
-      setRequests(reqData || []);
+      
+      // Filter out requests older than 2 minutes
+      const now = Date.now();
+      const freshRequests = (reqData || []).filter(r => {
+        const timeDiff = now - new Date(r.created_at).getTime();
+        return timeDiff <= 120000;
+      });
+      
+      setRequests(freshRequests);
 
       // 2. Fetch my accepted rides
       const { data: myData, error: myErr } = await supabase

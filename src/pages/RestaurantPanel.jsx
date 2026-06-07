@@ -45,7 +45,12 @@ function borderColor(status) {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function RestaurantPanel() {
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
+  
+  const handleToggleStoreStatus = async () => {
+    const newStatus = user?.is_open === false ? true : false;
+    await updateProfile({ is_open: newStatus });
+  };
   
   const [activeTab, setActiveTab] = useState('orders'); // 'orders' or 'products'
 
@@ -231,7 +236,21 @@ export default function RestaurantPanel() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-gray-800">Restaurant Dashboard</h2>
-            <p className="text-gray-500 text-sm mt-0.5">Welcome, {user?.shop_name || user?.name || 'Chef'}</p>
+            <div className="flex items-center gap-3 mt-1">
+              <p className="text-gray-500 text-sm">Welcome, {user?.shop_name || user?.name || 'Chef'}</p>
+              
+              {/* Open/Close Toggle */}
+              <div className="flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-full">
+                <span className={`w-2 h-2 rounded-full ${user?.is_open !== false ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                <span className="text-xs font-bold text-gray-700">{user?.is_open !== false ? 'Store Open' : 'Store Closed'}</span>
+                <button 
+                  onClick={handleToggleStoreStatus}
+                  className="ml-2 text-[10px] uppercase font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded hover:bg-teal-100"
+                >
+                  Toggle
+                </button>
+              </div>
+            </div>
           </div>
           <button onClick={fetchData} className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors">
             <RefreshCw className="w-5 h-5 text-gray-500" />

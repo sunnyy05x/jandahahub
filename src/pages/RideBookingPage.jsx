@@ -10,6 +10,7 @@ export default function RideBookingPage() {
   
   // Phase: 'input' -> 'searching' -> 'accepted'
   const [phase, setPhase] = useState('input');
+  const [isInitializing, setIsInitializing] = useState(true);
   
   const [fromLoc, setFromLoc] = useState('');
   const [toLoc, setToLoc] = useState('');
@@ -21,6 +22,7 @@ export default function RideBookingPage() {
   const [acceptedDriver, setAcceptedDriver] = useState(null);
   const [driverPhone, setDriverPhone] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [rideCreatedAt, setRideCreatedAt] = useState(null);
 
   // Free Google Translate API (English to Hindi)
   const translateToHindi = async (text) => {
@@ -65,6 +67,7 @@ export default function RideBookingPage() {
 
       if (error) throw error;
       setBookingId(data.id);
+      setRideCreatedAt(data.created_at);
       setPhase('searching');
     } catch (err) {
       console.error(err);
@@ -118,6 +121,79 @@ export default function RideBookingPage() {
       return () => supabase.removeChannel(channel);
     }
   }, [phase, bookingId]);
+
+  // Initial load: check for existing active request
+  useEffect(() => {
+    async function checkActiveRide() {
+      if (!user?.id) {
+        setIsInitializing(false);
+        return;
+      }
+      try {
+        const { data, error } = await supabase
+          .from('ride_bookings')
+          .select('*')
+          .eq('customer_id', user.id)
+          .in('status', ['searching', 'accepted'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (data) {
+          if (data.status === 'searching') {
+            const timeDiff = Date.now() - new Date(data.created_at).getTime();
+            if (timeDiff > 120000) { // older than 2 minutes
+              await supabase.from('ride_bookings').update({ status: 'cancelled' }).eq('id', data.id);
+            } else {
+              setBookingId(data.id);
+              setRideCreatedAt(data.created_at);
+              setProposedFare(data.price.toString());
+              setPhase('searching');
+              
+              // Also fetch any existing bids
+              const { data: existingBids } = await supabase.from('ride_bids').select('*').eq('booking_id', data.id).order('created_at', { ascending: false });
+              if (existingBids) setBids(existingBids);
+            }
+          } else if (data.status === 'accepted') {
+            // Re-fetch driver and driver phone
+            const { data: acceptedBid } = await supabase.from('ride_bids').select('*').eq('booking_id', data.id).eq('status', 'accepted').single();
+            if (acceptedBid) {
+              setAcceptedDriver(acceptedBid);
+              const { data: driverProfile } = await supabase.from('profiles').select('phone').eq('id', acceptedBid.driver_id).single();
+              setDriverPhone(driverProfile?.phone || 'Not Provided');
+            }
+            setBookingId(data.id);
+            setPhase('accepted');
+          }
+        }
+      } catch (err) {
+        // no active rides
+      } finally {
+        setIsInitializing(false);
+      }
+    }
+    checkActiveRide();
+  }, [user]);
+
+  // Auto-cancel searching rides after 2 minutes
+  useEffect(() => {
+    let interval;
+    if (phase === 'searching' && bookingId && rideCreatedAt) {
+      interval = setInterval(async () => {
+        const timeDiff = Date.now() - new Date(rideCreatedAt).getTime();
+        if (timeDiff >= 120000) {
+          clearInterval(interval);
+          await cancelRequest();
+          alert('There is no available driver at this price. You can increase the price and try again.');
+        }
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [phase, bookingId, rideCreatedAt]);
+
+  if (isInitializing) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><Loader2 className="w-8 h-8 text-teal-500 animate-spin" /></div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col pb-24">

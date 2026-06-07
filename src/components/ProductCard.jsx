@@ -24,12 +24,21 @@ export default function ProductCard({ product }) {
     }
   };
 
+  const isOpen = product.profiles?.is_open !== false;
+
   return (
     <div
-      className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-3 flex items-center gap-4 transition-all duration-200 hover:shadow-md ${
-        !(product.in_stock ?? product.inStock ?? true) ? 'opacity-60' : ''
+      className={`relative bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-3 flex items-center gap-4 transition-all duration-200 hover:shadow-md ${
+        !(product.in_stock ?? product.inStock ?? true) || !isOpen ? 'opacity-60 grayscale' : ''
       }`}
     >
+      {!isOpen && (
+        <div className="absolute inset-0 z-10 bg-white/20 flex items-center justify-center rounded-2xl pointer-events-none">
+          <div className="bg-black/80 text-white font-bold text-xs uppercase px-4 py-1.5 rounded-full shadow-lg border border-gray-700 backdrop-blur-sm transform -rotate-2">
+            Currently Closed
+          </div>
+        </div>
+      )}
       {/* Left: Emoji on circle */}
       <div className="w-24 shrink-0 bg-slate-50 flex items-center justify-center overflow-hidden border-r border-slate-100">
         {product.image?.startsWith('http') ? (
@@ -81,7 +90,11 @@ export default function ProductCard({ product }) {
           </div>
 
           {/* Add to Cart / Quantity Stepper */}
-          {!(product.in_stock ?? product.inStock ?? true) ? (
+          {!isOpen ? (
+            <span className="text-xs text-gray-500 font-bold bg-gray-100 px-2 py-1 rounded">
+              Closed
+            </span>
+          ) : !(product.in_stock ?? product.inStock ?? true) ? (
             <span className="text-xs text-gray-400 font-medium">
               Out of stock
             </span>

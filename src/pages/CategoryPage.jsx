@@ -42,7 +42,7 @@ export default function CategoryPage() {
       if (!config) return;
       setLoading(true);
       try {
-        let query = supabase.from('products').select('*').eq('category', category).order('created_at', { ascending: false });
+        let query = supabase.from('products').select('*, profiles(is_open)').eq('category', category).order('created_at', { ascending: false });
         
         if (config.subcategories && activeTab && activeTab !== 'all') {
           // use ilike for case-insensitive matching
