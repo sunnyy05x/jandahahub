@@ -13,7 +13,7 @@ const categories = [
   },
   {
     title: 'Town Shuttle',
-    subtitle: 'Book Shared Rides',
+    subtitle: 'Book Private Rides',
     image: '/images/shuttle.png',
     path: '/rides',
   },
