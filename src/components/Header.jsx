@@ -18,16 +18,19 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 bg-gradient-to-r from-teal-600 to-teal-500 text-white shadow-md">
       <div className="flex items-center justify-between px-4 py-3">
-        {/* Left: App name + location */}
-        <div className="flex flex-col">
-          <h1 className="text-xl font-bold tracking-tight leading-none">
-            JandahaHub
-          </h1>
-          <div className="flex items-center gap-1 mt-0.5">
-            <MapPin className="w-3 h-3 opacity-80" />
-            <span className="text-[11px] opacity-80 font-medium">
-              Jandaha, Vaishali
-            </span>
+        {/* Left: Logo + App name + location */}
+        <div className="flex items-center gap-2">
+          <img src="/logo.jpg" alt="Logo" className="w-9 h-9 rounded-full border border-white/20 shadow-sm object-cover" />
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold tracking-tight leading-none">
+              JandahaHub
+            </h1>
+            <div className="flex items-center gap-1 mt-0.5">
+              <MapPin className="w-3 h-3 opacity-80" />
+              <span className="text-[11px] opacity-80 font-medium">
+                Jandaha, Vaishali
+              </span>
+            </div>
           </div>
         </div>
 
